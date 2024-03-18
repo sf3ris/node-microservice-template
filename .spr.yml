@@ -1,0 +1,5 @@
+prTemplatePath: '.github/PULL_REQUEST_TEMPLATE.md'
+prTemplateInsertStart: '#### Enjoy the review'
+prTemplateInsertEnd: '#### Commit description'
+mergeMethod: 'merge'
+githubBranch: 'master'

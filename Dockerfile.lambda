@@ -1,0 +1,33 @@
+# Build node app with dev dependencies
+FROM node:20-alpine as build
+
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+
+COPY package.json /usr/src/app/
+RUN yarn install
+
+COPY . /usr/src/app/
+RUN yarn build
+
+# Copy the build and install only production dependencies
+FROM public.ecr.aws/lambda/nodejs:20
+
+ARG NODE_ENV
+ARG AWS_REGION
+ARG AWS_SECRET_ID
+
+ENV NODE_ENV "$NODE_ENV"
+ENV AWS_REGION "$AWS_REGION"
+ENV AWS_SECRET_ID "$AWS_SECRET_ID"
+
+USER $APPLICATION_USER
+
+COPY --from=build /usr/src/app/package.json ${LAMBDA_TASK_ROOT}
+RUN npm install
+COPY --from=build /usr/src/app/build/src ${LAMBDA_TASK_ROOT}
+# RUN mkdir ${LAMBDA_TASK_ROOT}/migrations
+# COPY --from=build /usr/src/app/build/migrations/ ${LAMBDA_TASK_ROOT}/migrations/
+# COPY --from=build /usr/src/app/build/knexfile.js ${LAMBDA_TASK_ROOT}
+
+CMD ["lambda.handler"]

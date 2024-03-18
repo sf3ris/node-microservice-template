@@ -1,0 +1,54 @@
+name: Deploy on staging on master push
+
+on:
+  push:
+    branches:
+      - master
+      - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+          role-duration-seconds: 3600
+          role-skip-session-tagging: true
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: jit-planner-repository-staging
+          IMAGE_TAG: ${{ github.sha }}
+          NODE_ENV: staging
+          AWS_REGION: eu-central-1
+          AWS_SECRET_ID: jit-planner-staging
+        run: |
+          # Build a docker container and
+          # push it to ECR
+          docker build --build-arg NODE_ENV=$NODE_ENV \
+          --build-arg AWS_REGION=$AWS_REGION \
+          --build-arg AWS_SECRET_ID=$AWS_SECRET_ID \
+           -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+           -f ./Dockerfile.lambda .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: deploy
+        env:
+          IMAGE_URI: ${{ steps.build-image.outputs.image }}
+        run: |
+          # update lambda function docker image
+          aws lambda update-function-code --image-uri=$IMAGE_URI --function-name jit-planner-function-staging

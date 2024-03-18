@@ -1,0 +1,22 @@
+FROM node:20-alpine
+
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+
+COPY package.json /usr/src/app/
+RUN yarn install
+
+ARG LOG_LEVEL="debug"
+
+ENV NODE_ENV development
+ENV LOG_LEVEL "${LOG_LEVEL}"
+
+EXPOSE 3000
+
+RUN apk --no-cache add curl
+
+HEALTHCHECK \
+    --interval=3s --timeout=30s \
+    CMD curl --fail http://0.0.0.0:3000/health || exit 1
+
+CMD [ "yarn", "dev" ]

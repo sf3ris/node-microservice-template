@@ -1,0 +1,17 @@
+{
+  "include": ["./src/**/*.ts", "./migrations/**/*.ts", "./knexfile.ts"],
+  "exclude": ["**/__mocks__", "iac/*"],
+  "compilerOptions": {
+    "lib": ["es2020"],
+    "module": "commonjs",
+    "target": "es2020",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "build/",
+    "resolveJsonModule": true,
+    "typeRoots": ["./src/@types/"]
+  }
+}
